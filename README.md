@@ -1,2 +1,3 @@
-# Pretty-Menu
-This repository contains source code for a Google extension that replaces the default Google start page with a more convenient and customizable one
+# Pretty-Menu ※ Google homepage extension
+
+![Main page](materials/img/main_page.png)
