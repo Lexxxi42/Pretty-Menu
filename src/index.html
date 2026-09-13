@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Новая вкладка</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="bg-layer"></div>
+
+<div class="app">
+  <header class="top-bar">
+    <button id="btn-settings" class="icon-btn" title="Настройки">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+    </button>
+    <div class="center-col">
+      <div class="clock-wrap" id="clock-wrap">
+        <span id="clock">00:00</span>
+        <span id="date" class="date"></span>
+      </div>
+      <div class="search-wrap" id="search-wrap">
+        <form id="search-form">
+          <svg class="search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input id="search-input" type="text" placeholder="Поиск…" autocomplete="off" spellcheck="false">
+          <button id="btn-lens" type="button" class="lens-btn" title="Поиск по изображению">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+          </button>
+        </form>
+        <div id="suggestions" class="suggestions hidden"></div>
+        <div id="lens-menu" class="lens-menu hidden">
+          <button id="lens-file" class="ctx-item">📁 Загрузить файл</button>
+          <button id="lens-url" class="ctx-item">🔗 Вставить ссылку</button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <nav id="tabs" class="tabs"></nav>
+  <main id="grid" class="grid"></main>
+  <p id="empty-hint" class="empty-hint hidden">Группа пуста — нажмите «+ Добавить», чтобы создать плитку</p>
+</div>
+
+<!-- модалка плитки -->
+<div id="modal-tile" class="modal hidden">
+  <div class="modal-box glass">
+    <h3 id="tile-modal-title">Новая плитка</h3>
+    <form id="tile-form">
+      <label>Название
+        <input type="text" id="f-title" placeholder="Например: Работа" required>
+      </label>
+      <label>Ссылка
+        <input type="text" id="f-url" placeholder="example.com" required>
+      </label>
+      <label class="checkbox-line"><input type="checkbox" id="f-favicon" checked> Взять иконку сайта</label>
+      <label class="checkbox-line"><input type="checkbox" id="f-noiconbg"> Прозрачный фон иконки</label>
+      <label>Цвет иконки
+        <input type="color" id="f-color" value="#e8eaf6">
+      </label>
+      <label style="margin-top:4px">Выбрать иконку
+        <div id="icon-picker" class="icon-picker"></div>
+      </label>
+      <input type="hidden" id="f-group">
+      <div class="modal-actions">
+        <button type="button" id="tile-delete" class="btn danger hidden">Удалить</button>
+        <span class="spacer"></span>
+        <button type="button" class="btn" data-close>Отмена</button>
+        <button type="submit" class="btn primary">Добавить</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- модалка группы -->
+<div id="modal-group" class="modal hidden">
+  <div class="modal-box glass">
+    <h3 id="group-modal-title">Новая группа</h3>
+    <form id="group-form">
+      <label>Название
+        <input type="text" id="g-name" placeholder="Например: Работа" required>
+      </label>
+      <label>Цвет вкладки
+        <input type="color" id="g-color" value="#007aff">
+      </label>
+      <div class="modal-actions">
+        <button type="button" id="group-delete" class="btn danger hidden">Удалить группу</button>
+        <span class="spacer"></span>
+        <button type="button" class="btn" data-close>Отмена</button>
+        <button type="submit" class="btn primary">Сохранить</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- модалка настроек -->
+<div id="modal-settings" class="modal hidden">
+  <div class="modal-box glass">
+    <h3>Настройки</h3>
+
+    <div class="setting-section">
+      <label class="setting-label">Тема оформления</label>
+      <div class="theme-row">
+        <button class="theme-btn" data-theme="light">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+          Светлая
+        </button>
+        <button class="theme-btn" data-theme="dark">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+          Тёмная
+        </button>
+        <button class="theme-btn" data-theme="glass">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+          Стекло
+        </button>
+      </div>
+    </div>
+
+    <div class="setting-section">
+      <label class="setting-label">Акцентный цвет</label>
+      <div class="accent-row">
+        <label class="accent-picker" style="background:#007aff" data-accent="#007aff"><input type="radio" name="accent"></label>
+        <label class="accent-picker" style="background:#ff3b30" data-accent="#ff3b30"><input type="radio" name="accent"></label>
+        <label class="accent-picker" style="background:#34c759" data-accent="#34c759"><input type="radio" name="accent"></label>
+        <label class="accent-picker" style="background:#ff9500" data-accent="#ff9500"><input type="radio" name="accent"></label>
+        <label class="accent-picker" style="background:#af52de" data-accent="#af52de"><input type="radio" name="accent"></label>
+        <label class="accent-picker" style="background:#ff7de1" data-accent="#ff7de1"><input type="radio" name="accent"></label>
+        <label class="accent-picker" style="background:#5ac8fa" data-accent="#5ac8fa"><input type="radio" name="accent"></label>
+        <input type="color" id="s-accent" value="#007aff" title="Свой цвет">
+      </div>
+    </div>
+
+    <div class="setting-section">
+      <label class="setting-label">Фоновая картинка</label>
+      <label class="upload-btn">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        Выбрать изображение
+        <input type="file" id="s-bgfile" accept="image/*">
+      </label>
+      <button id="s-bgclear" class="btn small hidden">Сбросить фон</button>
+      <div id="bg-preview" class="bg-preview hidden"></div>
+    </div>
+
+    <div class="setting-section">
+      <label class="setting-label">Стиль часов</label>
+      <div class="theme-row clock-style-row">
+        <button class="theme-btn" data-clock="default">Стандарт</button>
+        <button class="theme-btn" data-clock="classic">Классика</button>
+        <button class="theme-btn" data-clock="minimal">Минимум</button>
+        <button class="theme-btn" data-clock="bold">Жирный</button>
+        <button class="theme-btn" data-clock="retro">Ретро</button>
+      </div>
+    </div>
+
+    <div class="setting-section">
+      <label class="setting-label">Цвет часов</label>
+      <div class="theme-row clock-color-row">
+        <button class="theme-btn" data-clockcolor="auto">Авто</button>
+        <button class="theme-btn" data-clockcolor="white">Белый</button>
+        <button class="theme-btn" data-clockcolor="dark">Тёмный</button>
+      </div>
+    </div>
+
+    <div class="setting-section">
+      <label class="setting-label">Элементы</label>
+      <label class="checkbox-line"><input type="checkbox" id="s-clock"> Часы</label>
+      <label class="checkbox-line"><input type="checkbox" id="s-search"> Поиск</label>
+      <label class="checkbox-line"><input type="checkbox" id="s-favicon"> Авто-иконки для новых</label>
+    </div>
+
+    <div class="setting-section">
+      <label class="setting-label">Бэкап</label>
+      <div class="backup-row">
+        <button type="button" class="btn small" id="btn-backup">Скачать бэкап</button>
+        <label class="btn small upload-backup">Восстановить
+          <input type="file" id="s-backupfile" accept=".json,application/json">
+        </label>
+      </div>
+    </div>
+
+    <div class="modal-actions">
+      <span class="spacer"></span>
+      <button type="button" class="btn" data-close>Готово</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast hidden" id="toast"></div>
+
+<!-- контекстное меню -->
+<div id="ctx-menu" class="ctx-menu hidden"></div>
+
+<script src="app.js"></script>
+</body>
+</html>
