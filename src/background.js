@@ -70,7 +70,7 @@ function addTileFromContext(groupId, info, tab) {
     group: groupId,
     icon: domain ? 'https://www.google.com/s2/favicons?sz=64&domain=' + domain : '',
     color: '#e8eaf6',
-    transparent: false,
+    transparent: true,
   }
 
   chrome.storage.local.get('startpanel_pending', (res) => {
