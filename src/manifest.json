@@ -1,10 +1,14 @@
 {
   "manifest_version": 3,
   "name": "Pretty-menu",
-  "version": "1.3",
-  "description": "Умные плитки-закладки: группы, поиск, темы, свой фон. Правый клик на сайте → добавить в плитки.",
-  "permissions": ["contextMenus", "storage"],
-  "host_permissions": ["https://www.google.com/*"],
+  "version": "1.0",
+  "description": "Google homepage extension",
+  "permissions": ["contextMenus", "storage", "tabs"],
+  "host_permissions": [
+    "https://www.google.com/*",
+    "https://lens.google.com/*",
+    "https://www.lens.google.com/*"
+  ],
   "background": {
     "service_worker": "background.js"
   },
