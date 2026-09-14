@@ -1,11 +1,15 @@
+// Старт-панель v1.2 — плитки, группы, темы, свой фон из файла
+// Фон-картинка — отдельно от темы, работает с любой темой.
+// 5 стилей часов, стекло с бликами.
+
 let data = {
   groups: [
     { id: 'default', name: 'Основные', color: '#007aff' },
   ],
   tiles: [
-    { id: 't1', title: 'Google', url: 'https://google.com', group: 'default', icon: '', color: '#e8eaf6', transparent: false },
-    { id: 't2', title: 'YouTube', url: 'https://youtube.com', group: 'default', icon: '', color: '#ffe0b2', transparent: false },
-    { id: 't3', title: 'GitHub', url: 'https://github.com', group: 'default', icon: '', color: '#c8e6c9', transparent: false },
+    { id: 't1', title: 'Google', url: 'https://google.com', group: 'default', icon: '', color: '#e8eaf6', transparent: true },
+    { id: 't2', title: 'YouTube', url: 'https://youtube.com', group: 'default', icon: '', color: '#ffe0b2', transparent: true },
+    { id: 't3', title: 'GitHub', url: 'https://github.com', group: 'default', icon: '', color: '#c8e6c9', transparent: true },
   ],
   settings: {
     clock: true,
@@ -59,7 +63,7 @@ function load() {
   try {
     const p = JSON.parse(raw)
     data.groups = p.groups || data.groups
-    data.tiles = p.tiles || data.tiles
+    data.tiles = (p.tiles || []).map(t => ({ ...t, transparent: t.transparent !== false })) // true по умолчанию
     data.settings = { ...data.settings, ...(p.settings || {}) }
     data.activeGroup = p.activeGroup || 'default'
     const nums = []
@@ -295,7 +299,7 @@ if (lensUrlBtn) {
 
 // CRUD
 function addTile(title, url, icon, color, group, transparent) {
-  data.tiles.push({ id: uid(), title, url, icon: icon || '', color: color || '#e8eaf6', transparent: !!transparent, group })
+  data.tiles.push({ id: uid(), title, url, icon: icon || '', color: color || '#e8eaf6', transparent: true, group })
   save(); renderAll()
 }
 
@@ -352,7 +356,7 @@ function openTileModal(tile) {
   document.getElementById('f-color').value = tile ? tile.color : '#e8eaf6'
   document.getElementById('f-group').value = tile ? tile.group : data.activeGroup
   document.getElementById('f-favicon').checked = tile ? !tile.icon : data.settings.autoFavicon
-  document.getElementById('f-noiconbg').checked = tile ? !!tile.transparent : false
+  document.getElementById('f-noiconbg').checked = tile ? !!tile.transparent : true
   buildIconPicker(tile ? tile.icon : '')
   modalTile.classList.remove('hidden')
   document.getElementById('f-title').focus()
@@ -882,6 +886,7 @@ function processPendingTiles() {
       const pending = res.startpanel_pending || []
       if (!pending.length) return
       pending.forEach(t => {
+        t.transparent = t.transparent !== false // true по умолчанию
         data.tiles.push(t)
         nextId = Math.max(nextId, parseInt(t.id.replace(/^\D+/g, '')) || 0) + 1
       })
