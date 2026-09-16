@@ -11,10 +11,11 @@ let data = {
     { id: 't2', title: 'YouTube', url: 'https://youtube.com', group: 'default', icon: '', color: '#ffe0b2', transparent: true },
     { id: 't3', title: 'GitHub', url: 'https://github.com', group: 'default', icon: '', color: '#c8e6c9', transparent: true },
   ],
-  settings: {
+settings: {
     clock: true,
     search: true,
     autoFavicon: true,
+    hoverGroups: false,
     theme: 'light',
     accentColor: '#007aff',
     clockStyle: 'default',
@@ -93,6 +94,9 @@ function renderTabs() {
       style="--tab-color:${g.color || '#007aff'};--tab-text:${txtColor}"
       data-gid="${g.id}">${esc(g.name)}</button>
   `}).join('') + `<button class="tab tab-add" title="Создать группу">+</button>`
+
+  let hoverTimer = null
+
   el.querySelectorAll('.tab').forEach(b => {
     b.addEventListener('click', () => {
       if (b.classList.contains('tab-add')) {
@@ -103,7 +107,23 @@ function renderTabs() {
       save()
       renderAll()
     })
+
+    if (data.settings.hoverGroups && !b.classList.contains('tab-add')) {
+      b.addEventListener('mouseenter', () => {
+        clearTimeout(hoverTimer)
+        hoverTimer = setTimeout(() => {
+          if (b.dataset.gid !== data.activeGroup) {
+            data.activeGroup = b.dataset.gid
+            save()
+            renderAll()
+          }
+        }, 60)
+      })
+      b.addEventListener('mouseleave', () => clearTimeout(hoverTimer))
+    }
   })
+
+  el.addEventListener('mouseleave', () => clearTimeout(hoverTimer))
 }
 
 function renderGrid() {
@@ -507,6 +527,7 @@ document.getElementById('btn-settings').addEventListener('click', () => {
   document.getElementById('s-clock').checked = data.settings.clock
   document.getElementById('s-search').checked = data.settings.search
   document.getElementById('s-favicon').checked = data.settings.autoFavicon
+  document.getElementById('s-hovergroups').checked = data.settings.hoverGroups
   // темы
   document.querySelectorAll('.theme-btn[data-theme]').forEach(b => {
     b.classList.toggle('active', b.dataset.theme === data.settings.theme)
@@ -639,6 +660,11 @@ document.getElementById('s-search').addEventListener('change', () => {
 document.getElementById('s-favicon').addEventListener('change', () => {
   data.settings.autoFavicon = document.getElementById('s-favicon').checked
   save()
+})
+document.getElementById('s-hovergroups').addEventListener('change', () => {
+  data.settings.hoverGroups = document.getElementById('s-hovergroups').checked
+  save()
+  renderAll()
 })
 
 // применение темы + фона
