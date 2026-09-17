@@ -123,9 +123,13 @@ body.hasImage.glass {
 #bg-layer {
   position: fixed; inset: 0; z-index: -1;
   background: var(--bg);
-  background-size: cover; background-position: center;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: var(--bg-size, cover);
   transition: background 0.3s;
 }
+body.bg-contain #bg-layer { --bg-size: contain; }
+body.bg-stretch #bg-layer { --bg-size: 100% 100%; }
 
 html, body { height: 100%; }
 body {
@@ -417,6 +421,23 @@ body.glass .tabs {
   min-height: 120px;
   cursor: pointer;
   border: 1px solid transparent;
+  animation: tileIn 0.35s ease-out both;
+  animation-delay: calc(var(--i, 0) * 40ms);
+}
+
+@keyframes tileIn {
+  from {
+    opacity: 0;
+    transform: translateY(18px) scale(0.92);
+  }
+  60% {
+    opacity: 1;
+    transform: translateY(-3px) scale(1.01);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 body.glass .tile {
   border-color: rgba(255,255,255,0.3);
@@ -520,6 +541,9 @@ body.glass .tile {
   padding: 28px;
   width: 92%;
   max-width: 400px;
+  max-height: 85vh;
+  overflow-y: auto;
+  overscroll-behavior: contain;
   box-shadow: 0 20px 60px rgba(0,0,0,0.15);
   animation: scaleIn 0.15s ease;
 }
@@ -528,6 +552,14 @@ body.dark .modal-box {
   border-color: rgba(255,255,255,0.08);
 }
 @keyframes scaleIn { from { transform: scale(0.94); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+.modal-box {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.modal-box::-webkit-scrollbar {
+  display: none;
+}
 
 .modal-box h3 { margin-bottom: 18px; font-size: 20px; font-weight: 600; }
 
@@ -715,6 +747,27 @@ body.dark .modal-box {
   margin-top: 8px;
   border: 1px solid rgba(128,128,128,0.2);
 }
+
+/* режимы фона */
+.bg-fit-row {
+  display: flex;
+  gap: 4px;
+  margin-top: 8px;
+}
+.bg-fit-btn {
+  flex: 1;
+  padding: 6px 4px;
+  border: 1px solid rgba(128,128,128,0.15);
+  border-radius: 8px;
+  background: rgba(255,255,255,0.3);
+  color: var(--text);
+  font-size: 11px;
+  cursor: pointer;
+  transition: all 0.15s;
+  text-align: center;
+}
+.bg-fit-btn:hover { border-color: var(--accent); }
+.bg-fit-btn.active { background: rgba(0,122,255,0.12); border-color: var(--accent); color: var(--accent); }
 
 /* бэкап */
 .backup-row {
