@@ -29,8 +29,8 @@
         </form>
         <div id="suggestions" class="suggestions hidden"></div>
         <div id="lens-menu" class="lens-menu hidden">
-          <button id="lens-file" class="ctx-item">📁 Загрузить файл</button>
-          <button id="lens-url" class="ctx-item">🔗 Вставить ссылку</button>
+          <button id="lens-file" class="ctx-item">Загрузить файл</button>
+          <button id="lens-url" class="ctx-item">Вставить ссылку</button>
         </div>
       </div>
     </div>
@@ -138,6 +138,23 @@
       </label>
       <button id="s-bgclear" class="btn small hidden">Сбросить фон</button>
       <div id="bg-preview" class="bg-preview hidden"></div>
+      <div class="bg-fit-row" id="bg-fit-row">
+        <button class="bg-fit-btn" data-fit="cover">Заполнить</button>
+        <button class="bg-fit-btn" data-fit="contain">Вписать</button>
+        <button class="bg-fit-btn" data-fit="stretch">Растянуть</button>
+      </div>
+    </div>
+
+    <div class="setting-section">
+      <label class="setting-label">Цвет текста</label>
+      <div class="theme-row text-color-row">
+        <button class="theme-btn" data-text="auto">Авто</button>
+        <button class="theme-btn" data-text="white">Белый</button>
+        <button class="theme-btn" data-text="dark">Тёмный</button>
+      </div>
+      <div style="margin-top:6px">
+        <input type="color" id="s-textcolor" value="#1d1d1f" title="Свой цвет">
+      </div>
     </div>
 
     <div class="setting-section">
@@ -165,6 +182,7 @@
       <label class="checkbox-line"><input type="checkbox" id="s-clock"> Часы</label>
       <label class="checkbox-line"><input type="checkbox" id="s-search"> Поиск</label>
       <label class="checkbox-line"><input type="checkbox" id="s-favicon"> Авто-иконки для новых</label>
+      <label class="checkbox-line"><input type="checkbox" id="s-hovergroups"> Переключение групп по наведению</label>
     </div>
 
     <div class="setting-section">
