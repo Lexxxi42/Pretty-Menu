@@ -20,6 +20,8 @@ settings: {
     accentColor: '#007aff',
     clockStyle: 'default',
     clockColor: 'auto',
+    textColor: 'auto',
+    bgFit: 'cover',
     bgData: '',
   },
   activeGroup: 'default',
@@ -85,45 +87,107 @@ function renderAll() {
   applySettings()
 }
 
-function renderTabs() {
+function renderTabs(noAnim) {
   const el = document.getElementById('tabs')
-  el.innerHTML = data.groups.map(g => {
-    const txtColor = textColor(g.color || '#007aff')
-    return `
-    <button class="tab${g.id === data.activeGroup ? ' active' : ''}"
-      style="--tab-color:${g.color || '#007aff'};--tab-text:${txtColor}"
-      data-gid="${g.id}">${esc(g.name)}</button>
-  `}).join('') + `<button class="tab tab-add" title="Создать группу">+</button>`
+  const activeId = data.activeGroup
 
-  let hoverTimer = null
+  const domTabs = el.querySelectorAll('.tab[data-gid]')
+  const needRebuild =
+    domTabs.length === 0 ||
+    domTabs.length !== data.groups.length ||
+    (domTabs.length && domTabs[0].dataset.gid !== data.groups[0].id)
 
-  el.querySelectorAll('.tab').forEach(b => {
-    b.addEventListener('click', () => {
-      if (b.classList.contains('tab-add')) {
-        openGroupModal(null)
-        return
+  if (needRebuild) {
+    el.innerHTML = data.groups.map(g => {
+      const txtColor = textColor(g.color || '#007aff')
+      return `
+        <button class="tab${g.id === activeId ? ' active' : ''}"
+          style="--tab-color:${g.color || '#007aff'};--tab-text:${txtColor}"
+          data-gid="${g.id}">${esc(g.name)}</button>
+      `
+    }).join('') + `<button class="tab tab-add" title="Создать группу">+</button>`
+
+    let glow = el.querySelector('.tab-glow')
+    if (!glow) {
+      glow = document.createElement('div')
+      glow.className = 'tab-glow'
+      el.prepend(glow)
+    }
+    requestAnimationFrame(() => moveGlow(activeId, true))
+  } else {
+    domTabs.forEach(b => {
+      const gid = b.dataset.gid
+      const g = data.groups.find(gr => gr.id === gid)
+      const isActive = gid === activeId
+      b.classList.toggle('active', isActive)
+      if (g) {
+        b.style.setProperty('--tab-color', g.color || '#007aff')
+        b.style.setProperty('--tab-text', textColor(g.color || '#007aff'))
       }
-      data.activeGroup = b.dataset.gid
-      save()
-      renderAll()
     })
 
-    if (data.settings.hoverGroups && !b.classList.contains('tab-add')) {
-      b.addEventListener('mouseenter', () => {
-        clearTimeout(hoverTimer)
-        hoverTimer = setTimeout(() => {
-          if (b.dataset.gid !== data.activeGroup) {
-            data.activeGroup = b.dataset.gid
-            save()
-            renderAll()
-          }
-        }, 60)
-      })
-      b.addEventListener('mouseleave', () => clearTimeout(hoverTimer))
-    }
-  })
+    moveGlow(activeId, noAnim)
+  }
 
-  el.addEventListener('mouseleave', () => clearTimeout(hoverTimer))
+  if (!el._listeners) {
+    el.addEventListener('click', onTabClick)
+    el.addEventListener('mouseover', onTabHover)
+    el.addEventListener('mouseleave', onTabLeave)
+    el._listeners = true
+  }
+}
+
+function moveGlow(gid, instant) {
+  const el = document.getElementById('tabs')
+  const glow = el.querySelector('.tab-glow')
+  const tab = el.querySelector(`.tab[data-gid="${gid}"]`)
+  if (!glow || !tab) return
+  if (instant) glow.classList.add('no-anim')
+  glow.style.left = tab.offsetLeft + 'px'
+  glow.style.top = tab.offsetTop + 'px'
+  glow.style.width = tab.offsetWidth + 'px'
+  glow.style.height = tab.offsetHeight + 'px'
+  const g = data.groups.find(gr => gr.id === gid)
+  const c = (g && g.color) || 'var(--accent)'
+  glow.style.setProperty('--glow-color', c)
+  if (instant) {
+    glow.offsetHeight
+    glow.classList.remove('no-anim')
+  }
+}
+
+let hoverTimer = null
+
+function onTabClick(e) {
+  const b = e.target.closest('.tab')
+  if (!b) return
+  if (b.classList.contains('tab-add')) { openGroupModal(null); return }
+  if (!b.dataset.gid) return
+  switchGroup(b.dataset.gid)
+}
+
+function onTabHover(e) {
+  const b = e.target.closest('.tab')
+  if (!b || !b.dataset.gid || b.classList.contains('tab-add') || !data.settings.hoverGroups) return
+  clearTimeout(hoverTimer)
+  hoverTimer = setTimeout(() => {
+    if (b.dataset.gid !== data.activeGroup) switchGroup(b.dataset.gid)
+  }, 100)
+}
+
+function onTabLeave(e) {
+  clearTimeout(hoverTimer)
+}
+
+function switchGroup(gid) {
+  if (gid === data.activeGroup) return
+  data.activeGroup = gid
+  save()
+  document.getElementById('tabs').querySelectorAll('.tab[data-gid]').forEach(b => {
+    b.classList.toggle('active', b.dataset.gid === gid)
+  })
+  moveGlow(gid)
+  renderGrid()
 }
 
 function renderGrid() {
@@ -136,19 +200,7 @@ function renderGrid() {
     el.innerHTML = renderAddTileBtn()
   } else {
     hint.classList.add('hidden')
-    el.innerHTML = tiles.map(t => {
-      const ico = t.icon
-        ? `<img src="${esc(t.icon)}" alt="">`
-        : t.title.charAt(0).toUpperCase()
-      const icoStyle = t.transparent ? 'color:inherit;background:transparent' : `background:${t.color || '#e8eaf6'};color:${textColor(t.color)}`
-      return `
-        <a href="${esc(t.url)}" class="tile" draggable="true" data-tid="${t.id}">
-          <div class="ico" style="${icoStyle}">${ico}</div>
-          <span class="name">${esc(t.title)}</span>
-          <button class="x" data-tid="${t.id}" title="Удалить">✕</button>
-        </a>
-      `
-    }).join('') + renderAddTileBtn()
+    el.innerHTML = tiles.map((t, i) => tileHTML(t, i)).join('') + renderAddTileBtn()
   }
 
   el.querySelectorAll('.add-tile-btn').forEach(b => {
@@ -190,6 +242,53 @@ function renderGrid() {
     save()
     renderAll()
   })
+}
+
+function tileHTML(t, i = 0) {
+  const ico = t.icon
+    ? `<img src="${esc(t.icon)}" alt="">`
+    : t.title.charAt(0).toUpperCase()
+  const icoStyle = t.transparent ? 'color:inherit;background:transparent' : `background:${t.color || '#e8eaf6'};color:${textColor(t.color)}`
+  return `
+    <a href="${esc(t.url)}" class="tile" draggable="true" data-tid="${t.id}" style="--i:${i}">
+      <div class="ico" style="${icoStyle}">${ico}</div>
+      <span class="name">${esc(t.title)}</span>
+      <button class="x" data-tid="${t.id}" title="Удалить">✕</button>
+    </a>
+  `
+}
+
+function appendTileDOM(t) {
+  const el = document.getElementById('grid')
+  const hint = document.getElementById('empty-hint')
+  hint.classList.add('hidden')
+
+  const tmp = document.createElement('div')
+  tmp.innerHTML = tileHTML(t, el.querySelectorAll('.tile').length)
+  const node = tmp.firstElementChild
+
+  const addBtn = el.querySelector('.add-tile-btn')
+  if (addBtn) el.insertBefore(node, addBtn)
+  else el.appendChild(node)
+
+  node.querySelector('.x').addEventListener('click', e => {
+    e.preventDefault(); e.stopPropagation()
+    deleteTile(t.id)
+  })
+
+  if (el.querySelector('.tile') && !addBtn) {
+  }
+}
+
+function cleanupGrid() {
+  const el = document.getElementById('grid')
+  const tiles = data.tiles.filter(t => t.group === data.activeGroup)
+  const hint = document.getElementById('empty-hint')
+  if (!tiles.length) {
+    hint.classList.remove('hidden')
+    el.innerHTML = renderAddTileBtn()
+    el.querySelector('.add-tile-btn').addEventListener('click', () => openTileModal(null))
+  }
 }
 
 function renderAddTileBtn() {
@@ -319,20 +418,33 @@ if (lensUrlBtn) {
 
 // CRUD
 function addTile(title, url, icon, color, group, transparent) {
-  data.tiles.push({ id: uid(), title, url, icon: icon || '', color: color || '#e8eaf6', transparent: true, group })
-  save(); renderAll()
+  const tile = { id: uid(), title, url, icon: icon || '', color: color || '#e8eaf6', transparent: true, group }
+  data.tiles.push(tile)
+  save()
+  if (group === data.activeGroup) appendTileDOM(tile)
+  else renderGrid()
 }
 
 function updateTile(id, title, url, icon, color, transparent) {
   const t = data.tiles.find(t => t.id === id)
   if (!t) return
   t.title = title; t.url = url; t.icon = icon || ''; t.color = color || '#e8eaf6'; t.transparent = !!transparent
-  save(); renderAll()
+  save()
+  const el = document.querySelector(`.tile[data-tid="${id}"]`)
+  if (el) {
+    el.href = esc(url)
+    el.querySelector('.name').textContent = title
+    const ico = el.querySelector('.ico')
+    if (icon) { ico.innerHTML = `<img src="${esc(icon)}" alt="">`; ico.style.cssText = '' }
+    else { ico.innerHTML = title.charAt(0).toUpperCase(); ico.style.cssText = t.transparent ? 'color:inherit;background:transparent' : `background:${color || '#e8eaf6'};color:${textColor(color)}` }
+  }
 }
 
 function deleteTile(id) {
   data.tiles = data.tiles.filter(t => t.id !== id)
-  save(); renderAll()
+  save()
+  const el = document.querySelector(`.tile[data-tid="${id}"]`)
+  if (el) { el.remove(); cleanupGrid() }
 }
 
 function addGroup(name, color) {
@@ -546,6 +658,17 @@ document.getElementById('btn-settings').addEventListener('click', () => {
   document.querySelectorAll('.theme-btn[data-clockcolor]').forEach(b => {
     b.classList.toggle('active', b.dataset.clockcolor === data.settings.clockColor)
   })
+  // цвет текста
+  document.querySelectorAll('[data-text]').forEach(b => {
+    b.classList.toggle('active', b.dataset.text === data.settings.textColor)
+  })
+  if (data.settings.textColor && data.settings.textColor.startsWith('#')) {
+    document.getElementById('s-textcolor').value = data.settings.textColor
+  }
+  // режим фона
+  document.querySelectorAll('.bg-fit-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.fit === (data.settings.bgFit || 'cover'))
+  })
   // превью фона
   updateBgPreview()
   modalSettings.classList.remove('hidden')
@@ -612,13 +735,13 @@ document.getElementById('s-bgfile').addEventListener('change', function () {
   reader.onload = function (e) {
     const img = new Image()
     img.onload = function () {
-      const maxW = 1920
+      const maxW = 3840
       let w = img.naturalWidth, h = img.naturalHeight
-      if (w > maxW) { h = h * maxW / w; w = maxW }
+      if (w > maxW) { h = Math.round(h * maxW / w); w = maxW }
       const c = document.createElement('canvas')
       c.width = w; c.height = h
       c.getContext('2d').drawImage(img, 0, 0, w, h)
-      data.settings.bgData = c.toDataURL('image/jpeg', 0.8)
+      data.settings.bgData = c.toDataURL('image/jpeg', 0.92)
       updateBgPreview()
       save()
       applySettings()
@@ -626,6 +749,35 @@ document.getElementById('s-bgfile').addEventListener('change', function () {
     img.src = e.target.result
   }
   reader.readAsDataURL(file)
+})
+
+// режим растяжения фона
+document.querySelectorAll('.bg-fit-btn').forEach(b => {
+  b.addEventListener('click', () => {
+    document.querySelectorAll('.bg-fit-btn').forEach(bb => bb.classList.remove('active'))
+    b.classList.add('active')
+    data.settings.bgFit = b.dataset.fit
+    save()
+    applySettings()
+  })
+})
+
+// цвет текста — пресеты
+document.querySelectorAll('[data-text]').forEach(b => {
+  b.addEventListener('click', () => {
+    document.querySelectorAll('[data-text]').forEach(bb => bb.classList.remove('active'))
+    b.classList.add('active')
+    data.settings.textColor = b.dataset.text
+    save()
+    applySettings()
+  })
+})
+// цвет текста — свой
+document.getElementById('s-textcolor').addEventListener('input', function () {
+  document.querySelectorAll('[data-text]').forEach(bb => bb.classList.remove('active'))
+  data.settings.textColor = this.value
+  save()
+  applySettings()
 })
 
 document.getElementById('s-bgclear').addEventListener('click', () => {
@@ -671,7 +823,7 @@ document.getElementById('s-hovergroups').addEventListener('change', () => {
 function applySettings() {
   const s = data.settings
   // очищаем всё
-  document.body.classList.remove('dark', 'glass', 'hasImage')
+  document.body.classList.remove('dark', 'glass', 'hasImage', 'bg-contain', 'bg-stretch', 'textwhite', 'textdark')
 
   // тема
   if (s.theme === 'dark') document.body.classList.add('dark')
@@ -686,6 +838,25 @@ function applySettings() {
     document.body.style.removeProperty('--accent')
     document.body.style.removeProperty('--accent-hover')
   }
+
+  // цвет текста
+  document.body.style.removeProperty('--text')
+  document.body.style.removeProperty('--text-muted')
+  if (s.textColor === 'white') {
+    document.body.classList.add('textwhite')
+    document.body.style.setProperty('--text', '#ffffff')
+    document.body.style.setProperty('--text-muted', 'rgba(255,255,255,0.7)')
+  } else if (s.textColor === 'dark') {
+    document.body.classList.add('textdark')
+    document.body.style.setProperty('--text', '#1d1d1f')
+    document.body.style.setProperty('--text-muted', 'rgba(0,0,0,0.6)')
+  } else if (s.textColor && s.textColor.startsWith('#')) {
+    document.body.style.setProperty('--text', s.textColor)
+  }
+
+  // режим растяжения фона
+  if (s.bgFit === 'contain') document.body.classList.add('bg-contain')
+  else if (s.bgFit === 'stretch') document.body.classList.add('bg-stretch')
 
   // фоновая картинка поверх темы
   if (s.bgData) {
@@ -735,10 +906,8 @@ document.getElementById('search-input').addEventListener('keydown', function (e)
   const box = document.getElementById('suggestions')
   const items = box.querySelectorAll('div')
 
-  // если подсказок нет и нажали ↓ — сами запускаем поиск
   if (!items.length && (e.key === 'ArrowDown' || e.key === 'ArrowUp')) {
     e.preventDefault()
-    // форсируем input-обработчик
     this.dispatchEvent(new Event('input'))
     return
   }
@@ -768,12 +937,9 @@ document.getElementById('search-input').addEventListener('keydown', function (e)
   }
 })
 
-// контекстное меню
 const ctxMenu = document.getElementById('ctx-menu')
 
-// одна функция для показа — создаём элементы под конкретный случай
 function showCtxMenu(items, x, y) {
-  // items: [{ label, icon?, danger?, action }]
   ctxMenu.innerHTML = ''
   items.forEach((item, i) => {
     if (item.divider) {
@@ -791,7 +957,6 @@ function showCtxMenu(items, x, y) {
   ctxMenu.style.left = x + 'px'
   ctxMenu.style.top = y + 'px'
   ctxMenu.classList.remove('hidden')
-  // HACK: чтобы меню не уезжало за край окна
   const rect = ctxMenu.getBoundingClientRect()
   if (rect.right > window.innerWidth) ctxMenu.style.left = (window.innerWidth - rect.width - 8) + 'px'
   if (rect.bottom > window.innerHeight) ctxMenu.style.top = (window.innerHeight - rect.height - 8) + 'px'
@@ -815,7 +980,6 @@ document.getElementById('grid').addEventListener('contextmenu', e => {
     const items = [
       { label: 'Редактировать', icon: '✎', action: () => openTileModal(t) },
     ]
-    // переместить в другую группу
     const otherGroups = data.groups.filter(g => g.id !== t.group)
     if (otherGroups.length) {
       items.push({ divider: true })
@@ -832,7 +996,6 @@ document.getElementById('grid').addEventListener('contextmenu', e => {
     showCtxMenu(items, e.clientX, e.clientY)
     return
   }
-  // клик по пустому месту в сетке — добавить плитку
   if (e.target.closest('.grid') || e.target.closest('#empty-hint')) {
     e.preventDefault()
     showCtxMenu([
@@ -878,7 +1041,6 @@ function esc(s) {
   return d.innerHTML
 }
 
-// HACK: грубая прикидка яркости цвета — если фон светлый, буква тёмная, и наоборот
 function textColor(bg) {
   if (!bg) return '#fff'
   const hex = bg.replace('#', '')
@@ -896,41 +1058,57 @@ function toast(msg) {
   toastTimer = setTimeout(() => el.classList.add('hidden'), 2500)
 }
 
-// часы каждые 30 сек
 setInterval(renderClock, 30000)
 
 // старт
 load()
-// миграция: раньше картинка была темой, теперь это отдельный фон
 if (data.settings.theme === 'image') data.settings.theme = 'light'
 
-// подхватываем плитки, добавленные из контекстного меню Chrome
+function ingestPendingTiles(pending) {
+  if (!pending || !pending.length) return
+  pending.forEach(t => {
+    t.transparent = t.transparent !== false
+    data.tiles.push(t)
+    nextId = Math.max(nextId, parseInt(t.id.replace(/^\D+/g, '')) || 0) + 1
+    if (t.group === data.activeGroup) appendTileDOM(t)
+  })
+  save()
+}
+
 function processPendingTiles() {
   if (typeof chrome === 'undefined' || !chrome.runtime || !chrome.runtime.id) return
   try {
     chrome.storage.local.get('startpanel_pending', (res) => {
       const pending = res.startpanel_pending || []
       if (!pending.length) return
-      pending.forEach(t => {
-        t.transparent = t.transparent !== false // true по умолчанию
-        data.tiles.push(t)
-        nextId = Math.max(nextId, parseInt(t.id.replace(/^\D+/g, '')) || 0) + 1
-      })
+      ingestPendingTiles(pending)
       chrome.storage.local.set({ startpanel_pending: [] })
-      save()
-      renderAll()
     })
   } catch (e) {}
 }
 
-// сообщение от фонового скрипта — добавить плитку без перезагрузки
+if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.onMessage) {
+  try {
+    chrome.storage.onChanged.addListener((changes, area) => {
+      if (area === 'local' && changes.startpanel_pending) {
+        const pending = changes.startpanel_pending.newValue || []
+        const tiles = pending.filter(t => !data.tiles.some(dt => dt.id === t.id))
+        if (!tiles.length) return
+        ingestPendingTiles(tiles)
+        chrome.storage.local.set({ startpanel_pending: pending.filter(t => !tiles.some(nt => nt.id === t.id)) })
+      }
+    })
+  } catch (e) {}
+}
+
 if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.onMessage) {
   try {
     chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
       if (msg && msg.type === 'addTileFromExt' && msg.tile) {
+        msg.tile.transparent = msg.tile.transparent !== false
         data.tiles.push(msg.tile)
+        if (msg.tile.group === data.activeGroup) appendTileDOM(msg.tile)
         save()
-        renderAll()
         if (sendResponse) sendResponse({ ok: true })
       }
     })
